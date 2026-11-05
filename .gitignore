@@ -1,0 +1,11 @@
+# Local Neon connection string (contains credentials — never commit)
+neon-config.js
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs
+*.log

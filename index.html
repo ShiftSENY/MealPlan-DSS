@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Primary meta tags (PWA + SEO) -->
+  <title>MealPlan DSS — Weekly Meal Planning Decision Support System</title>
+  <meta name="description" content="A decision support system that plans your week of meals around the ingredients you have, your nutrition goals, budget, cooking time and preferences — with a recommendation and a reason for every meal.">
+  <meta name="theme-color" content="#e9f3df">
+  <meta name="author" content="MealPlan DSS">
+
+  <!-- Open Graph / social sharing -->
+  <meta property="og:title" content="MealPlan DSS — Weekly Meal Planning Decision Support System">
+  <meta property="og:description" content="Plan your week of meals with less thinking. Ingredient smart, nutrition aware, budget friendly.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="icons/icon-512x512.png">
+
+  <!-- Apple touch icon + favicon -->
+  <link rel="apple-touch-icon" href="icons/icon-180x180.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32x32.png">
+
+  <!-- PWA manifest -->
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Google Fonts: Plus Jakarta Sans for warm culinary clarity -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <!-- ================= Header / site nav ================= -->
+  <header class="site-header" id="top">
+    <div class="site-header__inner wrap">
+      <a class="site-header__brand" href="#top" aria-label="MealPlan DSS home">
+        <img class="site-header__logo" src="MealPlan_Logo.svg" alt="MealPlan DSS logo — green badge with a leaf">
+        <span class="site-header__name">MealPlan&nbsp;DSS</span>
+      </a>
+
+      <nav class="site-nav" id="site-nav" aria-label="Primary navigation">
+        <ul class="site-nav__list">
+          <li><a class="site-nav__link" href="#overview">Overview</a></li>
+          <li><a class="site-nav__link" href="#features">Features</a></li>
+          <li><a class="site-nav__link" href="#contact">Contact</a></li>
+        </ul>
+        <a class="btn btn--primary site-nav__cta" href="app.html">Log in</a>
+      </nav>
+
+      <button class="site-header__toggle" id="nav-toggle" aria-expanded="false" aria-controls="site-nav">
+        <span class="visually-hidden">Toggle navigation menu</span>
+        <span class="site-header__burger" aria-hidden="true"></span>
+      </button>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ================= Hero section ================= -->
+    <section class="hero">
+      <div class="hero__inner wrap">
+        <div class="hero__content reveal">
+          <p class="hero__eyebrow">Weekly Meal Planning Decision Support System</p>
+          <h1 class="hero__title">Stop asking<br>“what should I eat?”<br>all week long.</h1>
+          <p class="hero__lead">
+            MealPlan DSS turns your fridge, your budget and your preferences into a
+            ranked, week-long meal plan — with a clear reason behind every recommendation.
+          </p>
+          <div class="hero__actions">
+            <a class="btn btn--primary btn--lg" href="app.html">Get started</a>
+            <a class="btn btn--ghost btn--lg" href="#overview">See how it works</a>
+          </div>
+          <ul class="hero__stats">
+            <li><strong>7</strong> days planned at once</li>
+            <li><strong>6+</strong> criteria to balance</li>
+            <li><strong>1</strong> decision, zero guessing</li>
+          </ul>
+        </div>
+
+        <div class="hero__visual">
+          <img class="hero__logo" src="MealPlan_Logo.svg" alt="" role="presentation">
+          <p class="hero__caption">One week. One plan. Explained.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= Overview / why it exists ================= -->
+    <section class="about wrap" id="overview">
+      <header class="section__head reveal">
+        <h2 class="section__title">Why a meal planning DSS?</h2>
+        <p class="section__sub">The idea behind the system</p>
+      </header>
+
+      <div class="about__grid">
+        <div class="about__text">
+          <p>
+            Among the different decision support system ideas, weekly meal planning
+            addresses a problem that I encounter almost every day. Deciding what to cook
+            or eat may seem like a simple task, but it requires repeatedly considering
+            available ingredients, nutritional balance, cooking time, budget, and personal
+            preferences. Because this decision occurs several times a day, it gradually
+            consumes a significant amount of mental energy. At the same time, I need to
+            focus on my studies and other personal responsibilities. Continuously thinking
+            about my next meal occupies mental space that could be devoted to my academics
+            and other important matters.
+          </p>
+          <p>
+            My desired DSS will assist me in deciding what meals to prepare throughout the
+            week by evaluating multiple decision criteria. The system will consider factors
+            such as available ingredients, nutritional requirements, budget, cooking time,
+            ingredient expiration dates, meal variety, and dietary preferences. Using these
+            inputs, it will rank and recommend the most suitable meal options for each day
+            or meal period while explaining why each recommendation is appropriate.
+          </p>
+          <p>
+            Unlike many decisions that occur occasionally, meal planning is repetitive and
+            unavoidable. Reducing the cognitive effort required for this daily decision can
+            improve my productivity, lessen decision fatigue, and make it easier to maintain
+            healthy eating habits.
+          </p>
+        </div>
+
+        <aside class="about__diagram" aria-label="Diagram: inputs, processing and output of the system">
+          <div class="diagram">
+            <div class="diagram__col" role="list" aria-label="System inputs">
+              <span class="diagram__chip" role="listitem">On-hand ingredients</span>
+              <span class="diagram__chip" role="listitem">Nutrition needs</span>
+              <span class="diagram__chip" role="listitem">Budget</span>
+              <span class="diagram__chip" role="listitem">Cooking time</span>
+              <span class="diagram__chip" role="listitem">Expiry dates</span>
+              <span class="diagram__chip" role="listitem">Preferences</span>
+            </div>
+            <div class="diagram__arrow" aria-hidden="true">
+              <span>evaluate &amp; rank</span>
+            </div>
+            <div class="diagram__out">
+              <strong>Weekly plan</strong>
+              <span>ranked meals, day by day, with reasons</span>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ================= Workflow overview ================= -->
+    <section class="workflow" id="workflow">
+      <div class="wrap">
+        <header class="section__head reveal">
+          <h2 class="section__title">How it works</h2>
+          <p class="section__sub">From groceries to a full week plan in five steps</p>
+        </header>
+
+        <ol class="workflow__steps">
+          <li class="workflow__step reveal">
+            <span class="workflow__num" aria-hidden="true">1</span>
+            <h3>Tell it what you have</h3>
+            <p>Log the ingredients in your kitchen — or import a shopping list. Expiry dates can be added in seconds.</p>
+          </li>
+          <li class="workflow__step reveal">
+            <span class="workflow__num" aria-hidden="true">2</span>
+            <h3>Set your constraints</h3>
+            <p>Pick a budget, a daily cooking time limit, dietary preferences and nutritional targets.</p>
+          </li>
+          <li class="workflow__step reveal">
+            <span class="workflow__num" aria-hidden="true">3</span>
+            <h3>Run the evaluation</h3>
+            <p>The system scores every viable meal candidate against all of your criteria at once.</p>
+          </li>
+          <li class="workflow__step reveal">
+            <span class="workflow__num" aria-hidden="true">4</span>
+            <h3>Get ranked recommendations</h3>
+            <p>Each day and meal period gets a ranked shortlist — best match first.</p>
+          </li>
+          <li class="workflow__step reveal">
+            <span class="workflow__num" aria-hidden="true">5</span>
+            <h3>Understand the “why”</h3>
+            <p>Every recommendation is explained: which criterion it scored well on, and which you traded off.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ================= Key features ================= -->
+    <section class="features wrap" id="features">
+<header class="section__head reveal">
+          <h2 class="section__title">Key features</h2>
+        <p class="section__sub">What the system weighs before it recommends</p>
+      </header>
+
+      <div class="features__grid">
+        <article class="card reveal">
+          <svg class="card__icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 12h18M7 8V5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v3M5 12v8h14v-8"/>
+          </svg>
+          <h3 class="card__title">Ingredient tracking</h3>
+          <p class="card__text">The plan is built from what is actually in your kitchen, not from a generic shopping template.</p>
+        </article>
+
+        <article class="card reveal">
+          <svg class="card__icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9.5"/>
+            <path d="M12 3.5a8.5 8.5 0 0 1 0 17 8.5 8.5 0 0 1 0-17zM3.5 12h17"/>
+          </svg>
+          <h3 class="card__title">Nutrition balance</h3>
+          <p class="card__text">Protein, carbs, fats and calories are evaluated per meal and across the full week.</p>
+        </article>
+
+        <article class="card reveal">
+          <svg class="card__icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3v18M5 7h10a3 3 0 0 0 0-6H8a3 3 0 0 0 0 6zM3 7h18v14H3z"/>
+          </svg>
+          <h3 class="card__title">Budget control</h3>
+          <p class="card__text">A weekly spend limit shapes the ranking, so the plan stays within your means.</p>
+        </article>
+
+        <article class="card reveal">
+          <svg class="card__icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="13" r="8"/>
+            <path d="M12 9v4l2.5 2.5M9 2h6"/>
+          </svg>
+          <h3 class="card__title">Cooking time limits</h3>
+          <p class="card__text">Heavy meals on busy days, quick ones when the schedule fills up. Time is a first-class criterion.</p>
+        </article>
+
+        <article class="card reveal">
+          <svg class="card__icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="4" y="5" width="16" height="16" rx="2"/>
+            <path d="M4 9h16M9 3v4M15 3v4"/>
+          </svg>
+          <h3 class="card__title">Expiry-aware planning</h3>
+          <p class="card__text">Ingredients closest to their expiration date are prioritised so nothing goes to waste.</p>
+        </article>
+
+        <article class="card reveal">
+          <svg class="card__icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3l2.7 5.8 6.3.8-4.6 4.4 1.2 6.2L12 17.3 6.4 20.2l1.2-6.2L3 9.6l6.3-.8z"/>
+          </svg>
+          <h3 class="card__title">Variety &amp; preferences</h3>
+          <p class="card__text">Dietary restrictions are respected and meal variety is encouraged across the week.</p>
+        </article>
+
+        <article class="card reveal">
+          <svg class="card__icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 17l5-5 4 4 7-9"/>
+            <path d="M4 17h0"/>
+          </svg>
+          <h3 class="card__title">Explained rankings</h3>
+          <p class="card__text">Every recommendation comes with a short rationale — the “why” is never a black box.</p>
+        </article>
+
+        <article class="card reveal">
+          <svg class="card__icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12a9 9 0 1 1-2.6-6.4"/>
+            <path d="M21 3v6h-6"/>
+          </svg>
+          <h3 class="card__title">Works offline</h3>
+          <p class="card__text">Install it as a PWA — the app and its plan cache work even without a connection.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ================= Access / sign in ================= -->
+    <section class="access wrap" id="login">
+      <div class="access__card reveal">
+        <img class="access__logo" src="MealPlan_Logo.svg" alt="" role="presentation">
+        <h2 class="access__title">Start planning your week</h2>
+        <p class="access__sub">Sign in or create an account to save your inventory, meal catalog and weekly plan.</p>
+        <a class="btn btn--primary btn--full btn--lg" href="app.html">Open the dashboard</a>
+        <p class="access__alt">Your data is tied to your account and stays in sync across devices.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================= Footer ================= -->
+  <footer class="site-footer" id="contact">
+    <div class="wrap site-footer__grid">
+      <div class="site-footer__brand">
+        <img class="site-footer__logo" src="MealPlan_Logo.svg" alt="MealPlan DSS logo">
+        <p class="site-footer__tag">MealPlan DSS — a decision support system for weekly meal planning.</p>
+      </div>
+
+      <nav class="site-footer__nav" aria-label="Footer navigation">
+        <h3 class="site-footer__heading">Explore</h3>
+        <ul>
+          <li><a href="#overview">Overview</a></li>
+          <li><a href="#workflow">Workflow</a></li>
+          <li><a href="#features">Features</a></li>
+        </ul>
+      </nav>
+
+      <div class="site-footer__contact">
+        <h3 class="site-footer__heading">Contact</h3>
+        <ul>
+          <li>Email: <a href="mailto:jensent.ortega_cyn@isu.edu.ph">jensent.ortega_cyn@isu.edu.ph</a></li>
+          <li>Location: Isabela, PH</li>
+        </ul>
+      </div>
+    </div>
+    <div class="wrap site-footer__bottom">
+      <p>© 2026 MealPlan DSS. Built as a PWA — installable, offline-ready.</p>
+    </div>
+  </footer>
+
+  <!-- Offline / install status toast -->
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
