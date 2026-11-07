@@ -4,13 +4,15 @@
    - Precache the app shell on install.
    - Cache-first for static assets (icons, logo, css, js).
    - Network-first for page navigations, falling back to the cached shell.
+   - Network-first for /api/*.php — never serve stale data, and NEVER cache
+     API responses (each one is user-scoped by Clerk user_id).
    - Bump CACHE_VERSION to invalidate old caches after a deploy.
    ========================================================================== */
 
-const CACHE_VERSION = "mealplan-dss-v43";
+const CACHE_VERSION = "mealplan-dss-v45";
 const CACHE_NAME = CACHE_VERSION;
 
-// App shell — landing page + dashboard (data always comes from Neon live).
+// App shell — landing page + dashboard (data always comes from the PHP API live).
 const PRECACHE_URLS = [
   "./",
   "./index.html",
@@ -20,7 +22,6 @@ const PRECACHE_URLS = [
   "./app.css",
   "./app.js",
   "./db.js",
-  "./neon.js",
   "./recommend.js",
   "./csv-parse.js",
   "./clerk-config.js",
@@ -70,8 +71,14 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
+  // PHP API: network-first, never cache (responses are user-scoped).
+  if (url.pathname.includes("/api/")) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
   // Config files change during setup — always fetch them fresh, never cache.
-  if (url.pathname.endsWith("/neon-config.js") || url.pathname.endsWith("/clerk-config.js")) {
+  if (url.pathname.endsWith("/clerk-config.js")) {
     event.respondWith(fetch(request));
     return;
   }

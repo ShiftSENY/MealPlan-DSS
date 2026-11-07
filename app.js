@@ -11,7 +11,6 @@
 // ==========================================================================
 
 import * as db from "./db.js";
-import { isDbConfigured } from "./neon.js";
 import { rankMeals, normalizeName } from "./recommend.js";
 import { parseGroceryCsv } from "./csv-parse.js";
 
@@ -464,12 +463,10 @@ async function startApp(user) {
   $("#user-email").textContent =
     user.primaryEmailAddress?.emailAddress || user.username || "Signed in";
 
-  if (!isDbConfigured()) {
-    $("#db-banner").hidden = false;
-  } else {
-    $("#db-banner").hidden = true;
-    await loadAll();
-  }
+  // The PHP API is always reachable from the same origin; there is no
+  // separate "database not configured" state anymore.
+  $("#db-banner").hidden = true;
+  await loadAll();
   renderView();
 }
 
@@ -529,6 +526,155 @@ async function refreshShopping() {
   state.shopping = await db.listShoppingByDate(state.userId, state.shoppingDate);
 }
 
+/* ==========================================================================
+   Backup / restore (profile panel)
+   --------------------------------------------------------------------------
+   Serialises everything the dashboard owns (inventory, meal catalog, plan
+   history window, shopping history, preferences) into a versioned JSON
+   file. Restore re-creates rows via the same PHP API calls the app uses
+   for normal CRUD — new rows get fresh UUIDs, so old UUID references
+   (plan->meal, shopping->meal) are remapped through an id map.
+   ========================================================================== */
+
+async function buildBackupData() {
+  const [profile, inventory, meals] = await Promise.all([
+    db.getProfile(state.userId),
+    db.listInventory(state.userId),
+    db.listMeals(state.userId),
+  ]);
+
+  // The plan and shopping APIs are date-ranged, so we export the widest
+  // window the planner supports: HISTORY_START .. today + 52 weeks.
+  const plan = await db.getPlanForRange(state.userId, HISTORY_START, maxPlanDate());
+  const shopping = await db.listShoppingByDate(state.userId, HISTORY_START);
+
+  return {
+    app: "mealplan-dss",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    userId: state.userId,
+    profile: profile || null,
+    inventory: inventory || [],
+    mealCatalog: meals || [],
+    weeklyPlan: plan || [],
+    shoppingList: shopping || [],
+  };
+}
+
+function downloadJson(filename, data) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function backupAll() {
+  toast("Building your backup…");
+  try {
+    const data = await buildBackupData();
+    downloadJson(`mealplan-backup-${data.exportedAt.slice(0, 10)}.json`, data);
+    toast(`Backup saved (${data.inventory.length} inventory, ${data.mealCatalog.length} meals, ${data.weeklyPlan.length} plan slots).`);
+  } catch (err) {
+    console.error(err);
+    toast("Backup failed: " + err.message);
+  }
+}
+
+async function restoreBackup(parsed) {
+  if (!parsed || parsed.app !== "mealplan-dss") {
+    throw new Error("That file does not look like a MealPlan DSS backup.");
+  }
+  if (!Array.isArray(parsed.inventory) || !Array.isArray(parsed.mealCatalog) ||
+      !Array.isArray(parsed.weeklyPlan)) {
+    throw new Error("The backup file is missing data sections.");
+  }
+
+  const uid = state.userId;
+
+  // 1. Preferences (saveProfile upserts — this restores the profile row).
+  if (parsed.profile) {
+    const p = parsed.profile;
+    await db.saveProfile(uid, {
+      budget: p.budget ?? null,
+      max_cook_time_minutes: p.max_cook_time_minutes ?? null,
+      dietary_preferences: asArray(p.dietary_preferences),
+      disliked_ingredients: asArray(p.disliked_ingredients),
+      nutrition_goals: asArray(p.nutrition_goals),
+      meal_variety: p.meal_variety || "balanced",
+    });
+  }
+
+  // 2. Meal catalog first (plan and shopping rows reference meal ids).
+  const mealIdMap = new Map(); // oldId -> newId
+  for (const meal of parsed.mealCatalog) {
+    const created = await db.addMeal(uid, {
+      name: meal.name,
+      meal_periods: asArray(meal.meal_periods),
+      ingredients: asArray(meal.ingredients),
+      estimated_cost: meal.estimated_cost ?? null,
+      prep_time_minutes: meal.prep_time_minutes ?? null,
+      cook_time_minutes: meal.cook_time_minutes ?? null,
+      nutrition_notes: meal.nutrition_notes || null,
+      dietary_tags: asArray(meal.dietary_tags),
+    });
+    if (created?.id && meal.id) mealIdMap.set(meal.id, created.id);
+  }
+
+  // 3. Inventory.
+  for (const item of parsed.inventory) {
+    await db.addInventory(uid, {
+      item_name: item.item_name,
+      category: item.category || null,
+      quantity: item.quantity ?? null,
+      unit: item.unit || null,
+      purchase_date: item.purchase_date || null,
+      expiration_date: item.expiration_date || null,
+      storage_location: item.storage_location || null,
+      notes: item.notes || null,
+    });
+  }
+
+  // 4. Weekly plan (remap meal ids; skip slots whose meal didn't restore).
+  let restoredSlots = 0;
+  for (const slot of parsed.weeklyPlan) {
+    const mealId = mealIdMap.get(slot.meal_id) || slot.meal_id;
+    if (!slot.meal_date || !slot.meal_period || !mealId) continue;
+    await db.assignMeal(uid, slot.meal_date, slot.meal_period, mealId, slot.leftover_from || null);
+    restoredSlots++;
+  }
+
+  // 5. Shopping history (remap source meal ids when available).
+  for (const row of parsed.shoppingList || []) {
+    await db.addShoppingItem(uid, row.list_date, {
+      category: row.category || null,
+      ingredient_name: row.ingredient_name,
+      quantity: row.quantity ?? null,
+      unit: row.unit || null,
+      purchased: Boolean(row.purchased),
+      source_meal_id: row.source_meal_id ? (mealIdMap.get(row.source_meal_id) || null) : null,
+    });
+  }
+
+  refreshedAllCounts(uid, parsed, restoredSlots);
+}
+
+async function refreshedAllCounts(uid, parsed, restoredSlots) {
+  if (state.userId !== uid) return;
+  await Promise.all([
+    refreshInventory(), refreshMeals(), refreshPlan(), refreshShopping(),
+  ]);
+  renderView();
+  toast(
+    `Restored ${parsed.inventory?.length || 0} inventory, ${parsed.mealCatalog?.length || 0} meals, ` +
+    `${restoredSlots} plan slots.`
+  );
+}
+
 // Week navigation (clamped to today, no future weeks).
 async function goToPlanWeek(start) {
   state.planStart = clampWeekStart(start);
@@ -556,10 +702,8 @@ function renderView() {
   if (!section) return;
   section.hidden = false;
 
-  if (!isDbConfigured()) {
-    section.innerHTML = notConfiguredHtml();
-    return;
-  }
+  // Data comes from the PHP API (api/*.php) — nothing to configure in the
+  // browser anymore, so this guard from the old Neon era is gone.
 
   switch (state.view) {
     case "suggestions": renderSuggestions(section); break;
@@ -571,15 +715,7 @@ function renderView() {
   }
 }
 
-function notConfiguredHtml() {
-  return `
-    <div class="empty">
-      <h3>Connect your database</h3>
-      <p>Open <code>neon-config.js</code>, paste your Neon connection string, then reload this page.
-         Run <code>schema.sql</code> in the Neon SQL Editor first if you have not already.</p>
-      <a class="btn btn--primary" href="SETUP.md" target="_blank" rel="noopener">View setup guide</a>
-    </div>`;
-}
+  // (notConfiguredHtml was removed — no Neon connection string to configure.)
 
 /* ==========================================================================
    Suggestions view
@@ -1414,6 +1550,135 @@ function planEntry(mealDate, period) {
   );
 }
 
+/* ==========================================================================
+   Export the displayed week as an image (canvas → PNG download)
+   --------------------------------------------------------------------------
+   Uses the same data renderPlan() reads from state.plan, so the image
+   always matches what is on screen. Fully client-side (no new server
+   endpoint), which keeps the PWA offline story intact.
+   ========================================================================== */
+
+function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, maxLines) {
+  const words = String(text || "").split(" ");
+  let line = "";
+  let lines = 0;
+  for (const word of words) {
+    const test = line ? `${line} ${word}` : word;
+    if (ctx.measureText(test).width > maxWidth && line) {
+      ctx.fillText(line, x, y);
+      lines++;
+      if (lines >= maxLines) return;
+      line = word;
+      y += lineHeight;
+    } else {
+      line = test;
+    }
+  }
+  if (line && lines < maxLines) ctx.fillText(line, x, y);
+}
+
+async function exportPlanAsImage() {
+  const start = state.planStart;
+
+  // Canvas layout constants — 2x scale for a crisp screenshot.
+  const SCALE = 2;
+  const W = 880;
+  const pad = 48;
+  const dayH = 3 * 64 + 56; // 3 period slots under a day header
+  const gap = 14;
+  const H = pad * 2 + 76 + 7 * (dayH + gap); // + header row
+
+  const canvas = document.createElement("canvas");
+  canvas.width = W * SCALE;
+  canvas.height = H * SCALE;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(SCALE, SCALE);
+
+  // Background + header.
+  ctx.fillStyle = "#f8fbf3";
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "#2c3524";
+  ctx.font = "800 30px 'Segoe UI', system-ui, sans-serif";
+  ctx.fillText("MealPlan DSS — Weekly Meal Plan", pad, pad + 34);
+  ctx.font = "500 17px 'Segoe UI', system-ui, sans-serif";
+  ctx.fillStyle = "#5f6b52";
+  ctx.fillText(weekLabel(start), pad, pad + 62);
+
+  const periodColors = { breakfast: "#fef3c7", lunch: "#e7f3df", dinner: "#dbeafe" };
+  const periodBorder = { breakfast: "#f59e0b", lunch: "#76a923", dinner: "#3b82f6" };
+
+  let y = pad + 76;
+  for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
+    const date = addDaysISO(start, dayIdx);
+    const dayName = DAYS[dayIdx];
+    const isToday = date === todayISO();
+
+    // Day header row.
+    ctx.fillStyle = isToday ? "#e9f3df" : "#ffffff";
+    ctx.strokeStyle = "#dde7cf";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(pad, y, W - pad * 2, 40, { topLeft: 8, topRight: 8, bottomLeft: 0, bottomRight: 0 });
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#2c3524";
+    ctx.font = "700 17px 'Segoe UI', system-ui, sans-serif";
+    ctx.fillText(dayName, pad + 14, y + 27);
+    ctx.fillStyle = "#5f6b52";
+    ctx.font = "500 15px 'Segoe UI', system-ui, sans-serif";
+    ctx.fillText(fmtDate(date), pad + 150, y + 27);
+    y += 40;
+
+    // Period slots.
+    for (const period of PERIODS) {
+      const entry = planEntry(date, period);
+      const hasMeal = entry && entry.meal_id && entry.name;
+
+      ctx.fillStyle = hasMeal ? periodColors[period] : "#ffffff";
+      ctx.strokeStyle = hasMeal ? periodBorder[period] : "#dde7cf";
+      ctx.beginPath();
+      ctx.roundRect(pad + 14, y, W - pad * 2 - 28, 64, 6);
+      ctx.fill();
+      ctx.stroke();
+      ctx.lineWidth = hasMeal ? 2 : 1;
+
+      ctx.fillStyle = "#5f6b52";
+      ctx.font = "600 14px 'Segoe UI', system-ui, sans-serif";
+      ctx.fillText(capitalize(period), pad + 26, y + 20);
+
+      ctx.fillStyle = "#2c3524";
+      ctx.font = "600 16px 'Segoe UI', system-ui, sans-serif";
+      if (hasMeal) {
+        drawWrappedText(
+          ctx,
+          entry.leftover_from
+            ? `Leftovers from ${entry.leftover_from} — ${entry.name}`
+            : entry.name,
+          pad + 26, y + 44, W - pad * 2 - 52, 19, 1
+        );
+      } else {
+        ctx.fillStyle = "#9aa888";
+        ctx.fillText("—", pad + 26, y + 44);
+      }
+
+      y += 64;
+    }
+    y += gap;
+  }
+
+  // Actual download.
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+  if (!blob) throw new Error("Canvas export failed.");
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `mealplan-week-${start}.png`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+}
+
 function renderPlan(section) {
   const start = state.planStart;
   const isCurrent = start === currentWeekStart();
@@ -1429,6 +1694,13 @@ function renderPlan(section) {
         <p class="view__sub">${planned} meal${planned === 1 ? "" : "s"} planned · tap a slot to pick a meal.</p>
       </div>
       <div class="view__actions">
+        <button class="btn btn--ghost btn--sm" type="button" data-export-plan-image>
+          <svg class="btn__icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3v12m0 0 4-4m-4 4-4-4"/>
+            <path d="M4 21h16a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1z"/>
+          </svg>
+          <span>Save as image</span>
+        </button>
         <button class="btn btn--ghost btn--sm" type="button" data-bulk-fill>
           <svg class="btn__icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="12" cy="12" r="4"/>
@@ -1562,6 +1834,19 @@ function renderPlan(section) {
   });
 
   $("[data-bulk-fill]", section).addEventListener("click", openBulkFillDialog);
+  $("[data-export-plan-image]", section).addEventListener("click", async (event) => {
+    const btn = event.currentTarget;
+    btn.disabled = true;
+    try {
+      await exportPlanAsImage();
+      toast("Week image saved.");
+    } catch (err) {
+      console.error(err);
+      toast("Could not create the image: " + err.message);
+    } finally {
+      btn.disabled = false;
+    }
+  });
   $("[data-shift-week]", section).addEventListener("click", openShiftWeekDialog);
   $("[data-copy-prev]", section).addEventListener("click", copyPreviousWeek);
 
@@ -1583,8 +1868,7 @@ function renderPlan(section) {
   }
 }
 
-function openMealPicker(mealDate, period) {
-  const current = planEntry(mealDate, period);
+function openMealPicker(mealDate, period) {  const current = planEntry(mealDate, period);
   const ranked = rankMeals(state.meals, state.inventory, state.profile, state.plan);
   const matching = ranked.filter((r) => mealPeriods(r.meal).includes(period));
   const others = ranked.filter((r) => !mealPeriods(r.meal).includes(period));
@@ -2517,6 +2801,41 @@ if (logoutBtn) {
   logoutBtn.addEventListener("click", async () => {
     try { await window.Clerk.signOut(); } catch (err) { console.error(err); }
     showAuth();
+  });
+}
+
+// Backup / restore — wired here so it exists from boot, not just post-login.
+const backupBtn = $("#backup-btn");
+if (backupBtn) {
+  backupBtn.addEventListener("click", async () => {
+    if (!state.userId) { toast("Sign in first."); return; }
+    await backupAll();
+  });
+}
+const restoreBtn = $("#restore-btn");
+const restoreFile = $("#restore-file");
+if (restoreBtn && restoreFile) {
+  restoreBtn.addEventListener("click", () => {
+    if (!state.userId) { toast("Sign in first."); return; }
+    restoreFile.click();
+  });
+  restoreFile.addEventListener("change", async () => {
+    const file = restoreFile.files && restoreFile.files[0];
+    restoreFile.value = "";
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const parsed = JSON.parse(reader.result);
+        toast("Restoring your backup…");
+        await restoreBackup(parsed);
+      } catch (err) {
+        console.error(err);
+        toast("Restore failed: " + err.message);
+      }
+    };
+    reader.onerror = () => toast("Could not read that file.");
+    reader.readAsText(file);
   });
 }
 

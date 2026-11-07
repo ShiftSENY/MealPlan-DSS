@@ -7,4 +7,4 @@
 // ==========================================================================
 
 window.CLERK_PUBLISHABLE_KEY =
-  "pk_test_aW1tZW5zZS1yYXZlbi05NDA0LmNsZXJrLmFjY291bnRzLmRldiQ";
+  "pk_live_Y2xlcmsubWVhbHBsYW4tZHNzLmplbnNlbnRvcnRlZ2Eub25saW5lJA";

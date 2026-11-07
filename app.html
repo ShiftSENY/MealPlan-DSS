@@ -33,6 +33,12 @@
         <p class="small text-muted">Loading sign-in…</p>
       </div>
 
+      <!-- Demo account note: same credentials used by tools/create-demo-user.php -->
+      <p class="auth__demo" role="note">
+        <strong>Demo account</strong><br>
+        Email: <code>account@user.com</code> · Password: <code>MealPlanDSS</code>
+      </p>
+
       <p class="auth__back"><a href="index.html">&larr; Back to homepage</a></p>
     </div>
   </div>
@@ -58,6 +64,11 @@
         </button>
         <div class="profile-menu__panel" id="profile-panel" hidden>
           <span class="app-header__email" id="user-email"></span>
+          <div class="profile-menu__section">
+            <button class="btn btn--ghost btn--sm btn--full" type="button" id="backup-btn">Download backup (.json)</button>
+            <button class="btn btn--ghost btn--sm btn--full" type="button" id="restore-btn">Restore from backup…</button>
+            <input type="file" id="restore-file" accept="application/json,.json" class="profile-menu__hidden-file" aria-label="Choose a backup file to restore">
+          </div>
           <button class="btn btn--ghost btn--sm btn--full" type="button" id="logout-btn">Log out</button>
         </div>
       </div>
@@ -152,7 +163,7 @@
   <script
     async
     crossorigin="anonymous"
-    data-clerk-publishable-key="pk_test_aW1tZW5zZS1yYXZlbi05NDA0LmNsZXJrLmFjY291bnRzLmRldiQ"
+    data-clerk-publishable-key="pk_live_Y2xlcmsubWVhbHBsYW4tZHNzLmplbnNlbnRvcnRlZ2Eub25saW5lJA"
     src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
     type="text/javascript"
   ></script>
