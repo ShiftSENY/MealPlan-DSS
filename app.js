@@ -590,7 +590,7 @@ async function restoreBackup(parsed) {
     throw new Error("That file does not look like a MealPlan DSS backup.");
   }
   if (!Array.isArray(parsed.inventory) || !Array.isArray(parsed.mealCatalog) ||
-      !Array.isArray(parsed.weeklyPlan)) {
+    !Array.isArray(parsed.weeklyPlan)) {
     throw new Error("The backup file is missing data sections.");
   }
 
@@ -712,10 +712,11 @@ function renderView() {
     case "plan": renderPlan(section); break;
     case "shopping": renderShopping(section); break;
     case "preferences": renderPreferences(section); break;
+    case "help": renderHelp(section); break;
   }
 }
 
-  // (notConfiguredHtml was removed — no Neon connection string to configure.)
+// (notConfiguredHtml was removed — no Neon connection string to configure.)
 
 /* ==========================================================================
    Suggestions view
@@ -1868,7 +1869,8 @@ function renderPlan(section) {
   }
 }
 
-function openMealPicker(mealDate, period) {  const current = planEntry(mealDate, period);
+function openMealPicker(mealDate, period) {
+  const current = planEntry(mealDate, period);
   const ranked = rankMeals(state.meals, state.inventory, state.profile, state.plan);
   const matching = ranked.filter((r) => mealPeriods(r.meal).includes(period));
   const others = ranked.filter((r) => !mealPeriods(r.meal).includes(period));
@@ -2674,6 +2676,332 @@ function renderPreferences(section) {
       toast(err.message);
     }
   });
+}
+
+/* ==========================================================================
+   Help view — Product Requirements Document
+   --------------------------------------------------------------------------
+   The PRD documents what the app must do (functional + non-functional),
+   grounded in the current implementation: the 6 views, the recommend.js
+   ranking model, the MySQL data model, and the Clerk/PHP/PWA architecture.
+   ========================================================================== */
+
+function renderHelp(section) {
+  section.innerHTML = `
+    <div class="view__head">
+      <div>
+        <h2 class="view__title">Product Requirements Document</h2>
+        <p class="view__sub">MealPlan DSS — what the app is, who it's for, and what it must do.</p>
+      </div>
+      <div class="view__actions">
+        <span class="help__version">v1.0 · 2026-11-07</span>
+      </div>
+    </div>
+
+    <div class="help__tabs" role="tablist" aria-label="Help documents">
+      <button class="help__tab is-active" type="button" data-help-doc="prd" role="tab" aria-selected="true">PRD</button>
+      <button class="help__tab" type="button" data-help-doc="trd" role="tab" aria-selected="false">Technical Requirements (TRD)</button>
+    </div>
+
+    <div class="help__doc" id="help-doc"></div>`;
+
+  const doc = $("#help-doc", section);
+  const tabs = $$("[data-help-doc]", section);
+
+  function show(which) {
+    tabs.forEach((t) => {
+      const active = t.dataset.helpDoc === which;
+      t.classList.toggle("is-active", active);
+      t.setAttribute("aria-selected", String(active));
+    });
+    doc.innerHTML = which === "trd" ? trdHTML() : prdHTML();
+    doc.scrollTop = 0;
+  }
+
+  tabs.forEach((t) => t.addEventListener("click", () => show(t.dataset.helpDoc)));
+  show("prd");
+}
+
+/* PRD body (rendered inside renderHelp as the default sub-tab). */
+function prdHTML() {
+  return `
+      <div class="help__meta">
+        <span><strong>Product:</strong> MealPlan DSS (Weekly Meal Planning Decision Support System)</span>
+        <span><strong>Owner:</strong> Jensent M. Ortega</span>
+        <span><strong>Stack:</strong> Clerk (auth) · PHP 8 PDO (api/*.php) · MySQL · PWA (offline shell)</span>
+        <span><strong>Status:</strong> MVP live on cPanel (mealplan-dss.jensentortega.online)</span>
+      </div>
+
+      <section class="help__section">
+        <h3>1. Overview</h3>
+        <p>
+          MealPlan DSS is a PWA that turns a user's fridge inventory, meal
+          catalog, budget, cooking-time limits and preferences into a
+          <strong>ranked, week-long meal plan</strong> — with a plain-language
+          reason for every recommendation. The core flow:
+        </p>
+        <ol>
+          <li><strong>Inventory:</strong> log what you have (qty, unit, purchase + expiry dates).</li>
+          <li><strong>Meal Catalog:</strong> add dishes with required ingredients and times.</li>
+          <li><strong>Preferences:</strong> set budget, max cook time, dietary tags, dislikes, variety.</li>
+          <li><strong>Suggestions:</strong> the engine ranks every meal against (1)–(3) with explanations.</li>
+          <li><strong>Weekly Plan:</strong> assign ranked meals to dated slots, move/shift weeks, mark leftovers.</li>
+          <li><strong>Shopping List:</strong> missing ingredients per week, CSV import, purchase tracking.</li>
+        </ol>
+      </section>
+
+      <section class="help__section">
+        <h3>2. Problem statement</h3>
+        <p>
+          Meal planning is a repetitive, unavoidable daily decision that
+          consumes mental energy across many criteria. MealPlan DSS reduces
+          decision fatigue by making the evaluation explicit, ranked, and
+          explainable — the "why" behind every pick is always shown.
+        </p>
+      </section>
+
+      <section class="help__section">
+        <h3>3. Users</h3>
+        <ul>
+          <li><strong>Primary:</strong> students / busy individuals who need to plan weeks quickly.</li>
+          <li><strong>Secondary:</strong> meal-prep enthusiasts tracking expiry, budget and nutrition.</li>
+          <li><strong>Access:</strong> email sign-in via Clerk; demo account
+            <code>account@user.com</code> / <code>MealPlanDSS</code>.</li>
+        </ul>
+      </section>
+
+      <section class="help__section">
+        <h3>4. Functional requirements</h3>
+        <table class="help__table">
+          <thead><tr><th>ID</th><th>Requirement</th></tr></thead>
+          <tbody>
+            <tr><td>FR-01</td><td>Users can create accounts and sign in (Clerk, email + password) and sign out.</td></tr>
+            <tr><td>FR-02</td><td>Users can CRUD inventory items: name, category, quantity, unit, purchase/expiry dates, storage location, notes (api/inventory.php).</td></tr>
+            <tr><td>FR-03</td><td>Users can purge inventory bought before a chosen week start (api/inventory.php DELETE ?week_start=).</td></tr>
+            <tr><td>FR-04</td><td>Users can CRUD meals in the catalog: name, meal periods (multi), ingredient list, cost, prep/cook times, nutrition notes, dietary tags (api/meals.php).</td></tr>
+            <tr><td>FR-05</td><td>The app ranks catalog meals against inventory and preferences with human-readable reasons (client-side recommend.js).</td></tr>
+            <tr><td>FR-06</td><td>Users can assign meals to dated breakfast/lunch/dinner slots; leftovers from an earlier same-day slot are supported (api/plans.php).</td></tr>
+            <tr><td>FR-07</td><td>Week operations: clear week, move a meal to another date, shift the whole week, copy the previous week, bulk-fill a period (api/plans.php actions).</td></tr>
+            <tr><td>FR-08</td><td>Shopping lists are date-bounded per week; support manual CRUD, purchased toggles, CSV grocery-list import (marked purchased), and "Generate from plan" (missing ingredients).</td></tr>
+            <tr><td>FR-09</td><td>Users can save preferences: budget, max cook time, dietary preferences, disliked ingredients, nutrition goals, meal variety (api/profiles.php upsert).</td></tr>
+            <tr><td>FR-10</td><td>The displayed weekly plan can be saved as a PNG image (client-side canvas export).</td></tr>
+            <tr><td>FR-11</td><td>Users can back up all of their data (profile, inventory, meals, plans, shopping) to a versioned JSON file and restore it through the same API (account menu).</td></tr>
+            <tr><td>FR-12</td><td>Privacy Policy and Terms of Service pages exist and are linked from the footer and the auth screen.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="help__section">
+        <h3>5. Recommendation model</h3>
+        <p>Client-side, pure and explainable (recommend.js). Each meal is scored 0–1, higher is better:</p>
+        <table class="help__table">
+          <thead><tr><th>Signal</th><th>Weight</th><th>Rule</th></tr></thead>
+          <tbody>
+            <tr><td>Ingredient availability</td><td>0.32</td><td>Weighted by main-ingredient status; missing main ingredient penalized ×0.05 (depletion factor).</td></tr>
+            <tr><td>Cooking time</td><td>0.16</td><td>Score 1 when total time ≤ max cook time; declines linearly past the limit.</td></tr>
+            <tr><td>Dietary fit / dislikes</td><td>0.16</td><td>Disliked ingredient → diet score 0.15 (unsuitable); dietary tag/name mismatch → ×0.55.</td></tr>
+            <tr><td>Cost</td><td>0.14</td><td>Weekly budget spread over ~21 meal slots; score 1 when cost ≤ per-meal share.</td></tr>
+            <tr><td>Variety</td><td>0.12</td><td>Already planned this week: ×0.4 (high), ×0.65 (balanced), ×0.9 (low variety).</td></tr>
+            <tr><td>Expiry urgency</td><td>0.10</td><td>Bonus grows with ingredients expiring within 3 days.</td></tr>
+          </tbody>
+        </table>
+        <p class="help__note">Every result ships with a reasons list (availability, expiring, time, cost, diet, variety) — the ranking is never a black box.</p>
+      </section>
+
+      <section class="help__section">
+        <h3>6. Data model</h3>
+        <p>Every row is scoped by the Clerk <code>user_id</code>:</p>
+        <table class="help__table">
+          <thead><tr><th>Table</th><th>Key columns</th></tr></thead>
+          <tbody>
+            <tr><td><code>profiles</code></td><td>user_id (PK), budget, max_cook_time_minutes, dietary_preferences, disliked_ingredients, nutrition_goals, meal_variety</td></tr>
+            <tr><td><code>inventory</code></td><td>id (uuid), user_id (FK), item_name, quantity/unit, purchase_date, expiration_date</td></tr>
+            <tr><td><code>meal_catalog</code></td><td>id (uuid), user_id, name, meal_periods (JSON), ingredients (JSON), estimated_cost, prep/cook times, dietary_tags (JSON)</td></tr>
+            <tr><td><code>weekly_plan</code></td><td>id (uuid), user_id, meal_date, meal_period, meal_id (FK SET NULL), leftover_from, unique(user_id, meal_date, meal_period)</td></tr>
+            <tr><td><code>shopping_list</code></td><td>id (uuid), user_id, list_date, ingredient_name, quantity/unit, purchased, source_meal_id</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="help__section">
+        <h3>7. Architecture</h3>
+        <ul>
+          <li><strong>Auth:</strong> Clerk (email + password) supplies <code>user_id</code>; every API call is scoped to it.</li>
+          <li><strong>API:</strong> PHP 8 + PDO, one file per resource in <code>api/</code>, real prepared statements, JSON over fetch (NO Neon/Postgres).</li>
+          <li><strong>Frontend:</strong> vanilla JS modules in <code>app.js</code>; <code>db.js</code> is the transport layer (same signatures as the old Neon layer).</li>
+          <li><strong>PWA:</strong> manifest (standalone, 192/512 icons), theme color calm light green; service worker precaches the app shell; <code>/api/*</code> is network-first and never cached (user-scoped).</li>
+          <li><strong>Privacy:</strong> data lives in MySQL on cPanel; HTTPS in transit; no analytics/ads/trackers.</li>
+        </ul>
+      </section>
+
+      <section class="help__section">
+        <h3>8. Non-functional requirements</h3>
+        <ul>
+          <li><strong>Performance:</strong> dashboard renders from a single data load; ranking is synchronous over ≤ a few hundred meals.</li>
+          <li><strong>Offline:</strong> app shell loads offline; live data requires a connection (the offline toast explains this).</li>
+          <li><strong>Accessibility:</strong> semantic HTML5, ARIA labels, contrast-tested green palette, reduced-motion support.</li>
+          <li><strong>Security:</strong> PDO prepared statements, no secrets in the frontend, gitignored <code>config.php</code> and <code>neon-config.js</code>.</li>
+          <li><strong>Responsiveness:</strong> mobile-first layout; sidebar collapses on small screens.</li>
+        </ul>
+      </section>
+
+      <section class="help__section">
+        <h3>9. Success metrics</h3>
+        <ul>
+          <li>Weekly plan can be produced from blank state in ≤ 5 minutes.</li>
+          <li>Every recommendation shows at least one human-readable reason.</li>
+          <li>All 8 API files respond 200 with valid session; phpMyAdmin errors ($#1292/#1366) eliminated via the importer.</li>
+          <li>Lighthouse installability passes on the live HTTPS domain.</li>
+        </ul>
+      </section>
+
+      <section class="help__section">
+        <h3>10. Out of scope / future</h3>
+        <ul>
+          <li>Native mobile apps; server-side ranking (client-side is sufficient at this scale).</li>
+          <li>Payments, public recipe sharing, social features.</li>
+          <li>Admin console; email digests; barcode scanning for inventory.</li>
+        </ul>
+      </section>
+
+      <p class="help__note">For deployment and migration steps, see <code>PHP_CPANEL_SETUP.md</code> in the project root.</p>`;
+}
+
+/* ==========================================================================
+   Tech Docs view — Technical Requirements Document
+   --------------------------------------------------------------------------
+   TRD: the implementation-level requirements behind the PRD — stack,
+   architecture, API contract, data model, security, PWA policy, migration
+   tooling, and deployment checklist.
+   Rendered inside the Help view (renderHelp) as the "TRD" sub-tab.
+   ========================================================================== */
+
+function trdHTML() {
+  return `
+      <div class="help__meta">
+        <span><strong>System:</strong> MealPlan DSS (Weekly Meal Planning Decision Support System)</span>
+        <span><strong>Architecture:</strong> PWA client → Clerk auth → PHP 8 API → cPanel MySQL</span>
+        <span><strong>Deployment:</strong> jensentortega.online (cPanel, PHP 8.x, HTTPS)</span>
+        <span><strong>Status:</strong> MVP live</span>
+      </div>
+
+      <section class="help__section">
+        <h3>1. Tech stack</h3>
+        <table class="help__table">
+          <thead><tr><th>Layer</th><th>Technology</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>Frontend</td><td>Vanilla HTML5 / CSS3 / ES modules</td><td>No framework, no build step; <code>app.js</code> is the controller (2800+ lines, 6 views).</td></tr>
+            <tr><td>Auth</td><td>Clerk (email + password)</td><td>Clerk supplies the <code>user_id</code>; every API call is scoped to it. Production key (<code>pk_live_...</code>) in <code>app.html</code> + <code>clerk-config.js</code>.</td></tr>
+            <tr><td>API</td><td>PHP 8.x, PDO, JSON REST</td><td>One file per resource in <code>api/</code>; real prepared statements; no emulated prepares.</td></tr>
+            <tr><td>Database</td><td>MySQL (cPanel / MariaDB)</td><td>InnoDB, utf8mb4, JSON columns; PDO charset <code>utf8mb4</code> in DSN.</td></tr>
+            <tr><td>Hosting</td><td>cPanel shared hosting</td><td>phpMyAdmin for schema import; <code>public_html</code> document root; Let's Encrypt HTTPS.</td></tr>
+            <tr><td>Client data</td><td>Service worker + localStorage</td><td>Offline app shell only; API responses are never cached.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="help__section">
+        <h3>2. Architecture</h3>
+        <pre class="help__pre">Browser (PWA, app.html + app.js)
+  │  Clerk (auth, embed): sign-in/sign-up, session
+  ▼
+api/*.php  (PHP 8, PDO, json_response/request_json helpers)
+  ▼  require_user_id() — validates the Clerk user id from the request
+MySQL (cPanel): profiles, inventory, meal_catalog, weekly_plan, shopping_list</pre>
+        <p>
+          The browser never touches the database directly. The old Neon
+          direct-call path (<code>neon.js</code>, <code>neon-config.js</code>) was
+          removed; <code>db.js</code> now calls the PHP API with the <em>same
+          function signatures</em> the dashboard was built on, so <code>app.js</code>
+          needed zero changes.
+        </p>
+      </section>
+
+      <section class="help__section">
+        <h3>3. API contract</h3>
+        <p>Base URL: <code>/api/</code>. All requests are JSON; every request carries the Clerk <code>user_id</code>. Errors: <code>{ "error": "..." }</code> with an HTTP status (400/404/405/500).</p>
+        <table class="help__table">
+          <thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td><code>api/get_user.php</code></td><td>GET</td><td>Resolve the Clerk user, bootstrap an empty <code>profiles</code> row on first use.</td></tr>
+            <tr><td><code>api/profiles.php</code></td><td>POST</td><td>Upsert preferences (budget, max cook time, dietary, dislikes, nutrition, variety).</td></tr>
+            <tr><td><code>api/inventory.php</code></td><td>GET · POST · PUT · DELETE</td><td>Inventory CRUD + purge items purchased before a given week (<code>?week_start=</code>).</td></tr>
+            <tr><td><code>api/meals.php</code></td><td>GET · POST · PUT · DELETE</td><td>Meal catalog CRUD (meal periods + ingredients are JSON columns).</td></tr>
+            <tr><td><code>api/plans.php</code></td><td>GET · POST (actions)</td><td>Dated plan rows + actions: assign, remove, clear_week, move, shift_week, bulk_fill.</td></tr>
+            <tr><td><code>api/shopping.php</code></td><td>GET · POST (actions)</td><td>Shopping list CRUD + actions: add, update, purchased toggle, delete, clear_date.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="help__section">
+        <h3>4. Data model (MySQL)</h3>
+        <table class="help__table">
+          <thead><tr><th>Table</th><th>Key columns / constraints</th></tr></thead>
+          <tbody>
+            <tr><td><code>profiles</code></td><td><code>user_id</code> VARCHAR PRIMARY KEY (Clerk id). JSON cols for dietary_preferences, disliked_ingredients, nutrition_goals.</td></tr>
+            <tr><td><code>inventory</code></td><td><code>id</code> CHAR(36) UUID PK, <code>user_id</code> → profiles (CASCADE), item_name, quantity DECIMAL, purchase/expiration DATE, index on user_id.</td></tr>
+            <tr><td><code>meal_catalog</code></td><td><code>id</code> UUID PK, <code>user_id</code> → profiles (CASCADE), name, meal_periods / ingredients / dietary_tags as JSON, prep/cook INT, estimated_cost DECIMAL.</td></tr>
+            <tr><td><code>weekly_plan</code></td><td><code>id</code> UUID PK, <code>user_id</code> → profiles, <code>meal_id</code> → meal_catalog (SET NULL), meal_date DATE, meal_period ENUM-like CHECK, leftover_from, UNIQUE(user_id, meal_date, meal_period).</td></tr>
+            <tr><td><code>shopping_list</code></td><td><code>id</code> UUID PK, <code>user_id</code> → profiles, <code>source_meal_id</code> → meal_catalog (SET NULL), list_date DATE, purchased BOOL, index on (user_id, list_date).</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="help__section">
+        <h3>5. Security requirements</h3>
+        <ul>
+          <li><strong>Prepared statements everywhere</strong> — PDO with <code>ATTR_EMULATE_PREPARES = false</code>; every query is parameterized by <code>user_id</code>.</li>
+          <li><strong>Identity scoping</strong> — every endpoint resolves the Clerk <code>user_id</code> via <code>require_user_id()</code>; no user can read another user's rows.</li>
+          <li><strong>Passwords</strong> are hashed by Clerk (never stored in MySQL, never handled by the PHP API).</li>
+          <li><strong>Secrets</strong> — <code>api/config.php</code> (DB credentials) and <code>neon-config.js</code> are gitignored and never deployed with placeholder values.</li>
+          <li><strong>Transport</strong> — HTTPS everywhere (Let's Encrypt); PWAs require it; the service worker only registers on HTTPS or localhost.</li>
+          <li><strong>Demo account</strong> — created once via <code>tools/create-demo-user.php</code>, then deleted from the server (it holds a live Clerk secret if left).</li>
+        </ul>
+      </section>
+
+      <section class="help__section">
+        <h3>6. PWA requirements</h3>
+        <ul>
+          <li><strong>Manifest</strong> (<code>manifest.json</code>): name, short_name, standalone display, theme_color <code>#e9f3df</code> (calm light green), 192×192 and 512×512 PNG icons (one maskable).</li>
+          <li><strong>Service worker</strong> (<code>service-worker.js</code>): precaches the app shell (landing, dashboard, static assets); bumps <code>CACHE_VERSION</code> on every deploy; <strong><code>/api/*</code> is network-first and never cached</strong> (responses are user-scoped); everything else is cache-first with network fallback.</li>
+          <li><strong>Installability:</strong> Lighthouse PWA checklist must pass; offline shell loads without a connection; online/offline toasts explain the degraded state.</li>
+        </ul>
+      </section>
+
+      <section class="help__section">
+        <h3>7. Migration & importer requirements</h3>
+        <ul>
+          <li><strong>Neon export</strong> — <code>database/migration_from_neon.sql</code>: per-table blocks in FK order (profiles → meal_catalog → inventory → weekly_plan → shopping_list) with JSONB → text coercion, boolean → 1/0, and UTC <code>TO_CHAR</code> for timestamps.</li>
+          <li><strong>Importer</strong> — <code>tools/import_csv.php</code>: reads CSV, converts empty fields to SQL <code>NULL</code> (phpMyAdmin cannot do this), normalizes dates (<code>YYYY-MM-DD</code>, <code>MM/DD/YYYY</code>), runs <code>INSERT … ON DUPLICATE KEY UPDATE</code>, auto-creates stub profiles for missing <code>user_id</code>s. Proof run: 23/23 inventory rows, 0 failures.</li>
+          <li><strong>Re-entrancy:</strong> the importer is idempotent — re-running does not duplicate rows (PK upserts).</li>
+        </ul>
+      </section>
+
+      <section class="help__section">
+        <h3>8. Failure modes & troubleshooting</h3>
+        <table class="help__table">
+          <thead><tr><th>Symptom</th><th>Cause / fix</th></tr></thead>
+          <tbody>
+            <tr><td>#1366 Incorrect decimal value: 'quantity'</td><td>the CSV header row was inserted as data — re-export / handle via importer (header auto-skip).</td></tr>
+            <tr><td>#1292 Incorrect date value: '' for <code>expiration_date</code></td><td>phpMyAdmin turns empty fields into <code>''</code>, not NULL — use the PHP importer.</td></tr>
+            <tr><td>"Database connection failed."</td><td><code>api/config.php</code> credentials or prefixed DB name mismatch.</td></tr>
+            <tr><td>401 Missing or invalid user_id</td><td>frontend not passing the Clerk <code>user_id</code> to the API.</td></tr>
+            <tr><td>Stale UI after deploy</td><td>service worker cached the old shell — bump <code>CACHE_VERSION</code>.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="help__section">
+        <h3>9. Deployment checklist</h3>
+        <ol>
+          <li>Create MySQL database + user in cPanel; import <code>database/schema.sql</code> via phpMyAdmin.</li>
+          <li>(Existing data) run the <code>migration_from_neon.sql</code> exports, then import CSVs with <code>php tools/import_csv.php &lt;csv&gt; &lt;table&gt;</code> in FK order.</li>
+          <li>Fill <code>api/config.php</code> with the prefixed credentials; upload <code>api/</code> to <code>public_html</code>.</li>
+          <li>Run <code>php tools/create-demo-user.php &lt;clerk_secret_key&gt;</code>, then <strong>delete both tool scripts from the server</strong>.</li>
+          <li>Upload frontend files; bump <code>CACHE_VERSION</code> in the service worker.</li>
+          <li>Issue Let's Encrypt cert; force HTTPS; verify Lighthouse installability passes.</li>
+        </ol>
+      </section>`;
 }
 
 /* ==========================================================================

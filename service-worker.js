@@ -9,7 +9,7 @@
    - Bump CACHE_VERSION to invalidate old caches after a deploy.
    ========================================================================== */
 
-const CACHE_VERSION = "mealplan-dss-v45";
+const CACHE_VERSION = "mealplan-dss-v51";
 const CACHE_NAME = CACHE_VERSION;
 
 // App shell — landing page + dashboard (data always comes from the PHP API live).

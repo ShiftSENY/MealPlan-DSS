@@ -232,6 +232,17 @@ code {
   padding: 0 0.3em;
 }
 
+/* Legal links on the auth screen */
+.auth__legal {
+  margin-top: 0.9rem;
+  font-size: 0.82rem;
+  text-align: center;
+  color: var(--muted);
+}
+.auth__legal a {
+  font-weight: 600;
+}
+
 
 /* ---------- App shell ---------- */
 .app-header {
@@ -1861,6 +1872,127 @@ dialog.modal::backdrop { background: rgba(30, 38, 24, 0.5); backdrop-filter: blu
 .leftover-option:hover { border-color: #b8942f; }
 .leftover-option span { font-weight: 600; font-size: 0.85rem; }
 .leftover-option small { color: var(--muted); }
+
+/* ---------- Help / PRD document ---------- */
+.help__version {
+  font-size: 0.8rem;
+  color: var(--muted);
+  background: var(--surface, #f7faf2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem;
+}
+
+/* Sub-tab bar inside the Help view (PRD | TRD) */
+.help__tabs {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 1.4rem;
+  flex-wrap: wrap;
+}
+
+.help__tab {
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 0.45rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--text, #2c3524);
+  cursor: pointer;
+}
+
+.help__tab:hover {
+  border-color: var(--primary, #76a923);
+}
+
+.help__tab.is-active {
+  background: var(--primary, #76a923);
+  border-color: var(--primary, #76a923);
+  color: #fff;
+}
+
+.help__doc {
+  display: grid;
+  gap: 2rem;
+  max-width: 880px;
+}
+
+.help__meta {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1rem;
+  font-size: 0.85rem;
+  background: var(--surface, #f7faf2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.help__section h3 {
+  font-size: 1.15rem;
+  margin-bottom: 0.55rem;
+}
+
+.help__section p, .help__section li {
+  font-size: 0.93rem;
+  line-height: 1.6;
+}
+
+.help__section ul, .help__section ol {
+  padding-left: 1.2rem;
+}
+
+.help__section li {
+  margin-bottom: 0.3rem;
+}
+
+.help__note {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.help__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+  margin: 0.6rem 0 1rem;
+}
+
+.help__table th, .help__table td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--border);
+}
+
+.help__table th {
+  background: var(--primary-soft, #e9f3df);
+  font-weight: 700;
+}
+
+.help__table code {
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 0.82em;
+  background: var(--surface, #f7faf2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0 0.3em;
+}
+
+/* ---------- Tech Docs (TRD) ---------- */
+.help__pre {
+  margin: 0.6rem 0 1rem;
+  padding: 0.9rem 1rem;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  overflow-x: auto;
+  background: var(--text, #2c3524);
+  color: #e7f3df;
+  border-radius: var(--radius);
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+}
 
 /* ---------- Misc ---------- */
 .text-muted { color: var(--muted); }

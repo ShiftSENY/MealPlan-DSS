@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — MealPlan DSS</title>
+  <meta name="description" content="How MealPlan DSS collects, uses, and protects your personal data.">
+  <meta name="theme-color" content="#e9f3df">
+  <meta name="robots" content="noindex">
+  <link rel="apple-touch-icon" href="icons/icon-180x180.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32x32.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="legal.css">
+</head>
+<body>
+  <main class="legal wrap">
+    <nav class="legal__nav" aria-label="Back to home">
+      <a href="index.html">&larr; Back to homepage</a>
+    </nav>
+    <h1>Privacy Policy</h1>
+    <p class="legal__updated">Last updated: November 7, 2026</p>
+
+    <p>
+      MealPlan DSS is a personal weekly meal planning tool. This policy explains
+      what data the app collects, why, and the choices you have over it. We keep
+      the description as short and plain as possible.
+    </p>
+
+    <h2>1. What we collect</h2>
+    <p>We collect only what the app needs to work:</p>
+    <ul>
+      <li><strong>Account information:</strong> your name and email address, and a
+        user identifier assigned by our sign-in provider (Clerk). Signing in is
+        required to save data.</li>
+      <li><strong>Your app data:</strong> the meal planning content you enter —
+        ingredients and inventory, meal catalog entries, weekly plans, shopping
+        lists, and preferences (budget, cooking time, dietary tags). Each record
+        is keyed to your account.</li>
+    </ul>
+    <p>
+      We do not collect payment information, advertise, or use third-party
+      analytics or tracking beacons. There is no behavioral profiling.
+    </p>
+
+    <h2>2. How we use it</h2>
+    <p>Your data is used for one purpose: making the app work for you. That
+    includes:</p>
+    <ul>
+      <li>showing your saved inventory, meal catalog, plans and shopping lists
+        across sessions and devices;</li>
+      <li>ranking meal recommendations against your inventory and preferences;</li>
+      <li>letting you back up and restore your own data.</li>
+    </ul>
+    <p>We do not sell, rent, or share your data with advertisers or marketing partners.</p>
+
+    <h2>3. Who processes the data</h2>
+    <ul>
+      <li><strong>Clerk</strong> (clerk.dev) — handles authentication. Your smooth sign-in
+        credentials are processed by Clerk, not by us.</li>
+      <li><strong>Our hosting provider</strong> — the MySQL database that stores your app
+        data is hosted on our cPanel account (jensentortega.online). Data is
+        transmitted over HTTPS to the app.</li>
+    </ul>
+    <p>
+      On-premises or third parties receive data only when legally required,
+      and then only after reasonable notice where possible.
+    </p>
+
+    <h2>4. Cookies and local storage</h2>
+    <ul>
+      <li><strong>Essential authentication cookies (Clerk)</strong> — keep you signed in.</li>
+      <li><strong>Service worker cache</strong> — the app's HTML/CSS/JS shell and
+        static assets are cached so the PWA works offline. This cache contains
+        no personal data.</li>
+      <li><strong>localStorage (small app state)</strong> — things like recently used
+        inventory categories, so the interface is faster on your next visit.</li>
+    </ul>
+    <p>
+      No analytics or marketing cookies are used. API responses from our server
+      are never cached by the service worker.
+    </p>
+
+    <h2>5. Your rights</h2>
+    <p>You can, at any time:</p>
+    <ul>
+      <li><strong>Access</strong> your data inside the app (every screen shows your own rows);</li>
+      <li><strong>Export</strong> a full backup from your account menu
+        (**Download backup (.json)**);</li>
+      <li><strong>Update</strong> your preferences and delete any record from the app;</li>
+      <li><strong>Request deletion</strong> of your account and all related app data
+        by emailing us (see Section 7). Deletion may require manual cleanup
+        because the underlying table structure backs up every user
+        via `INSERT … ON DUPLICATE KEY UPDATE` idempotency.</li>
+    </ul>
+
+    <h2>6. Retention</h2>
+    <p>
+      App data is kept as long as your account is active. If you delete your
+      account, we remove your profile row and all rows scoped to your
+      `user_id` (inventory, meal catalog, plans, shopping lists). Weekly plans
+      created before account deletion are removed along with the account.
+    </p>
+
+    <h2>7. Contact</h2>
+    <p>
+      Privacy or data questions:
+      <a href="mailto:jensent.ortega_cyn@isu.edu.ph">jensent.ortega_cyn@isu.edu.ph</a>.
+    </p>
+
+    <p class="legal__foot">
+      MealPlan DSS is a learning/personal-use project. This policy describes
+      the current deployment; it may be updated as the app changes.
+    </p>
+  </main>
+</body>
+</html>

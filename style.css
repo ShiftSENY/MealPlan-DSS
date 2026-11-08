@@ -690,6 +690,20 @@ p {
   margin: 0;
 }
 
+.site-footer__legal {
+  margin-top: 0.5rem !important;
+}
+
+.site-footer__legal a {
+  color: #b9c4a8;
+  text-decoration: none;
+}
+
+.site-footer__legal a:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+
 /* ---------- Modal ---------- */
 .modal[hidden] {
   display: none;

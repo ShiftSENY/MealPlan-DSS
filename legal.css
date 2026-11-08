@@ -1,0 +1,50 @@
+/* Legal pages (privacy.html, terms.html) — minimal, matches site styles. */
+.legal {
+  max-width: 760px;
+  padding: 3rem 0 5rem;
+  line-height: 1.65;
+}
+
+.legal__nav {
+  margin-bottom: 2rem;
+}
+
+.legal__nav a {
+  font-weight: 600;
+}
+
+.legal h1 {
+  font-size: 2rem;
+  margin-bottom: 0.3em;
+}
+
+.legal__updated {
+  color: var(--color-muted, #5f6b52);
+  margin-bottom: 2rem;
+}
+
+.legal h2 {
+  margin-top: 2rem;
+  font-size: 1.25rem;
+}
+
+.legal p, .legal li {
+  color: var(--color-text, #2c3524);
+  font-size: 0.95rem;
+}
+
+.legal ul {
+  padding-left: 1.2rem;
+}
+
+.legal li {
+  margin-bottom: 0.3rem;
+}
+
+.legal__foot {
+  margin-top: 2.5rem;
+  font-size: 0.85rem;
+  color: var(--color-muted, #5f6b52);
+  border-top: 1px solid var(--border, #dde7cf);
+  padding-top: 1rem;
+}
